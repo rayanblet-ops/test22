@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 
 // --- SVG Icon Components ---
@@ -307,7 +306,6 @@ const featuredTeachersData = [
   {
     name: "Сидоров Иван Петрович",
     title: "Кандидат тех. наук, преподаватель высшей категории",
-    imageUrl: "https://picsum.photos/200/200?image=786",
     bio: "Более 20 лет опыта работы на буровых установках в Западной Сибири. Автор 15 научных публикаций и патента на изобретение. Эксперт WorldSkills.",
     philosophy: "Теория без практики мертва. Моя задача — не просто дать знания, а научить применять их в реальных производственных условиях.",
     studentQuote: "Иван Петрович объясняет сложнейшие процессы так, что становится понятно даже гуманитарию. Его примеры из личного опыта бесценны.",
@@ -316,7 +314,6 @@ const featuredTeachersData = [
   {
     name: "Кузнецова Ольга Викторовна",
     title: "Заслуженный учитель РБ, преподаватель химии",
-    imageUrl: "https://picsum.photos/200/200?image=761",
     bio: "Автор уникальной методики преподавания органической химии для нефтяников. Подготовила более 30 призеров республиканских олимпиад.",
     philosophy: "Химия — это не скучные формулы, а магия, которая происходит вокруг нас. Я учу видеть эту магию и управлять ей.",
     studentQuote: "Благодаря Ольге Викторовне я полюбила химию. Она умеет зажечь интерес к своему предмету и всегда готова помочь разобраться в трудной теме.",
@@ -325,7 +322,6 @@ const featuredTeachersData = [
    {
     name: "Михайлов Сергей Александрович",
     title: "Преподаватель IT-дисциплин, сертифицированный эксперт",
-    imageUrl: "https://picsum.photos/200/200?image=669",
     bio: "Практикующий разработчик, участвовал в создании автоматизированных систем управления для нефтегазовых компаний. Руководитель студенческого IT-клуба.",
     philosophy: "Сегодня программист в нефтегазовой отрасли — это ключевой специалист. Я готовлю студентов к решению реальных, а не академических задач.",
     studentQuote: "Сергей Александрович всегда в курсе последних IT-трендов. На его парах мы работаем над настоящими проектами, это круче любой теории.",
@@ -374,8 +370,43 @@ const scholarshipsInfo = [
   }
 ];
 
+// --- Smooth Scroll Helper ---
+const smoothScrollTo = (id: string, duration = 600) => {
+    const target = document.getElementById(id);
+    if (!target) {
+        // If target not found, scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+    
+    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
+    const headerOffset = 80; // Height of the fixed header
+    const offsetPosition = targetPosition - headerOffset;
 
-// --- Reusable Components defined outside App to prevent re-renders ---
+    const startPosition = window.pageYOffset;
+    const distance = offsetPosition - startPosition;
+    let startTime: number | null = null;
+
+    const ease = (t: number, b: number, c: number, d: number) => {
+        t /= d / 2;
+        if (t < 1) return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
+    };
+
+    const animation = (currentTime: number) => {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = ease(timeElapsed, startPosition, distance, duration);
+        window.scrollTo(0, run);
+        if (timeElapsed < duration) requestAnimationFrame(animation);
+    };
+
+    requestAnimationFrame(animation);
+};
+
+
+// --- Reusable Components ---
 
 interface SectionProps {
     id: string;
@@ -429,21 +460,17 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, title, children }) => (
 interface TeacherProfileCardProps {
     name: string;
     title: string;
-    imageUrl: string;
     bio: string;
     philosophy: string;
     studentQuote: string;
     studentName: string;
 }
 
-const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({ name, title, imageUrl, bio, philosophy, studentQuote, studentName }) => (
+const TeacherProfileCard: React.FC<TeacherProfileCardProps> = ({ name, title, bio, philosophy, studentQuote, studentName }) => (
     <div className="bg-gray-800 rounded-xl shadow-2xl p-6 flex flex-col space-y-4 transform hover:-translate-y-2 transition-transform duration-300">
-        <div className="flex items-center space-x-4">
-            <img src={imageUrl} alt={name} className="w-20 h-20 rounded-full border-2 border-cyan-500" />
-            <div>
-                <h4 className="text-xl font-bold text-white">{name}</h4>
-                <p className="text-sm text-cyan-400">{title}</p>
-            </div>
+        <div>
+            <h4 className="text-xl font-bold text-white">{name}</h4>
+            <p className="text-sm text-cyan-400">{title}</p>
         </div>
         <p className="text-gray-400 text-sm border-l-2 border-gray-700 pl-3">{bio}</p>
         <blockquote className="bg-gray-900/50 p-3 rounded-lg border-l-4 border-cyan-600">
@@ -484,18 +511,532 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer }) => {
 };
 
 
-// --- Main Application Component ---
+// --- Section Components ---
 
-const App: React.FC = () => {
-    const [scrolled, setScrolled] = useState(false);
+const Header: React.FC = () => (
+    <header id="home" className="relative h-screen flex items-center justify-center text-center text-white overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-cyan-900">
+        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="relative z-10 p-4">
+            <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
+                Октябрьский нефтяной колледж
+                <span className="block text-cyan-400 text-3xl md:text-5xl mt-2">им. С.И. Кувыкина</span>
+            </h1>
+            <p className="text-lg md:text-2xl max-w-3xl mx-auto text-gray-300">
+                Ваш старт в успешную карьеру в нефтегазовой отрасли!
+            </p>
+            <a href="#admission" onClick={(e) => { e.preventDefault(); smoothScrollTo('admission'); }} className="mt-8 inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+                Подать заявку
+            </a>
+        </div>
+    </header>
+);
+
+const AboutSection: React.FC = () => (
+    <Section id="about" title="Добро пожаловать в ОНК!">
+        <div className="max-w-4xl mx-auto text-center text-lg text-gray-300 space-y-6">
+            <p>
+                <span className="font-bold text-white">Полное официальное название:</span> Государственное автономное профессиональное образовательное учреждение Октябрьский нефтяной колледж им. С.И. Кувыкина.
+            </p>
+            <p>
+                Основанный в <span className="font-bold text-cyan-400">1952 году</span>, наш колледж прошел славный путь от небольшого техникума до одного из ведущих учебных заведений России по подготовке специалистов для топливно-энергетического комплекса. Мы гордимся своей историей, которая неразрывно связана с развитием нефтяной промышленности страны.
+            </p>
+            <p>
+                Колледж имеет все необходимые <span className="font-bold text-white">государственные лицензии и аккредитации</span>, что гарантирует высокое качество образования и соответствие федеральным стандартам.
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 pt-8">
+                <div className="flex items-center text-left">
+                    <MapPinIcon className="w-12 h-12 text-cyan-400 mr-4 flex-shrink-0" />
+                    <div>
+                        <h4 className="font-bold text-white">Наш адрес</h4>
+                        <p className="text-gray-400">Республика Башкортостан, г. Октябрьский, ул. Кувыкина, 15</p>
+                        <p className="text-gray-500 text-sm">Удобное расположение рядом с автовокзалом и основными транспортными артериями города.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Section>
+);
+
+const WhyUsSection: React.FC = () => (
+    <Section id="why-us" title="Почему выбирают нас?">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <FeatureCard
+                icon={<TrophyIcon className="w-8 h-8" />}
+                title="Признание и достижения"
+                description="Колледж неоднократно входил в топ «100 лучших ссузов России» и награжден званием «Лидер отрасли» за вклад в подготовку кадров."
+            />
+            <FeatureCard
+                icon={<AcademicCapIcon className="w-8 h-8" />}
+                title="Сильнейший преподавательский состав"
+                description="Наши преподаватели — это эксперты-практики с многолетним опытом работы на ведущих предприятиях отрасли."
+            />
+            <FeatureCard
+                icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.622.504-1.125 1.125-1.125h3.375c.621 0 1.125.503 1.125 1.125v3.375c0 .621-.504 1.125-1.125-1.125h-3.375a1.125 1.125 0 01-1.125-1.125v-3.375z" /><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.125a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h9.375c.621 0 1.125.503 1.125 1.125v11.625c0 .621-.504 1.125-1.125 1.125h-9.375z" /></svg>}
+                title="Современная база"
+                description="Лаборатории и мастерские, оснащенные по последнему слову техники, позволяют получать практические навыки на реальном оборудовании."
+            />
+            <FeatureCard
+                icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0012 16.5c-2.998 0-5.74-1.1-7.843-2.918m15.686-5.418c.53.945 1 2.055 1 3.253 0 1.258-.5 2.44-1.34 3.386" /></svg>}
+                title="Стратегическое партнерство"
+                description="Тесное сотрудничество с лидерами нефтегазовой индустрии: от производственной практики до целевого обучения."
+            />
+            <FeatureCard
+                icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
+                title="Гарантия трудоустройства"
+                description="Более 90% наших выпускников трудоустраиваются по специальности в первый год после окончания колледжа. Мы готовим востребованных специалистов."
+            />
+            <FeatureCard
+                icon={<UserGroupIcon className="w-8 h-8" />}
+                title="Насыщенная студенческая жизнь"
+                description="Спортивные секции, творческие кружки, волонтерское движение и студенческое самоуправление. У нас интересно не только учиться!"
+            />
+        </div>
+    </Section>
+);
+
+const SpecialtiesSection: React.FC = () => {
     const [activeTab, setActiveTab] = useState(0);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const activeSpecialty = specialtiesData[activeTab];
+
+    return (
+        <Section id="specialties" title="Наши специальности">
+            <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Выберите свое будущее в нефтегазовой отрасли и IT. Мы предлагаем востребованные программы, разработанные совместно с лидерами индустрии.</p>
+            <div className="flex flex-wrap justify-center border-b border-gray-700 mb-8">
+                {specialtiesData.map((spec, index) => (
+                    <button
+                        key={index}
+                        onClick={() => setActiveTab(index)}
+                        className={`py-3 px-4 text-sm sm:text-base font-medium border-b-2 transition-colors duration-300 relative ${activeTab === index ? 'text-cyan-400 border-cyan-400' : 'text-gray-400 border-transparent hover:text-white hover:border-gray-500'}`}
+                    >
+                        {spec.name}
+                        {spec.isProfile && <span className="absolute top-1 right-1 text-xs text-cyan-400/70">профильная</span>}
+                    </button>
+                ))}
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-6 sm:p-8">
+                <h3 className="text-2xl font-bold text-white mb-2">{activeSpecialty.code} {activeSpecialty.name}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <p className="font-semibold text-white">Срок обучения:</p>
+                        <p className="text-gray-400">На базе 9 кл: <span className="text-gray-300">{activeSpecialty.duration9}</span></p>
+                        <p className="text-gray-400">На базе 11 кл: <span className="text-gray-300">{activeSpecialty.duration11}</span></p>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <p className="font-semibold text-white">Места и конкурс:</p>
+                        <p className="text-gray-400">Бюджет: <span className="text-gray-300">{activeSpecialty.budgetPlaces}</span>, Платно: <span className="text-gray-300">{activeSpecialty.paidPlaces}</span></p>
+                        <p className="text-gray-400">Проходной балл (средний): <span className="text-gray-300">{activeSpecialty.passingScore}</span></p>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <p className="font-semibold text-white">Квалификация:</p>
+                        <p className="text-cyan-400 text-lg">{activeSpecialty.qualification}</p>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg md:col-span-2 lg:col-span-1">
+                        <div className="flex items-center mb-2">
+                            <BookOpenIcon className="w-6 h-6 text-cyan-400 mr-3" />
+                            <h4 className="font-semibold text-white">Ключевые дисциплины</h4>
+                        </div>
+                        <ul className="list-disc list-inside text-gray-400 space-y-1">
+                            {activeSpecialty.keyDisciplines.map(d => <li key={d}>{d}</li>)}
+                        </ul>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <div className="flex items-center mb-2">
+                            <WrenchScrewdriverIcon className="w-6 h-6 text-cyan-400 mr-3" />
+                            <h4 className="font-semibold text-white">Практические навыки</h4>
+                        </div>
+                        <ul className="list-disc list-inside text-gray-400 space-y-1">
+                            {activeSpecialty.skills.map(s => <li key={s}>{s}</li>)}
+                        </ul>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg">
+                        <div className="flex items-center mb-2">
+                            <BriefcaseIcon className="w-6 h-6 text-cyan-400 mr-3" />
+                            <h4 className="font-semibold text-white">Практика и карьера</h4>
+                        </div>
+                        <p className="text-gray-400 mb-2"><span className="font-semibold text-gray-300">Места практики:</span> {activeSpecialty.internship}</p>
+                        <p className="text-gray-400"><span className="font-semibold text-gray-300">Перспективы:</span> {activeSpecialty.prospects}</p>
+                        <p className="text-gray-400 mt-2"><span className="font-semibold text-gray-300">Дальнейшее обучение:</span> {activeSpecialty.furtherEducation}</p>
+                    </div>
+                </div>
+            </div>
+        </Section>
+    );
+};
+
+const InfrastructureSection: React.FC = () => (
+    <Section id="infrastructure" title="Наша инфраструктура">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы создали современную и комфортную среду, где каждый студент может раскрыть свой потенциал. Учитесь, развивайтесь и живите полной студенческой жизнью в ОНК!</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<BuildingOfficeIcon className="w-8 h-8" />} title="Учебные корпуса">
+                <p>Два просторных учебных корпуса общей площадью более 15 000 м² после капитального ремонта. Светлые аудитории оснащены мультимедийным оборудованием и интерактивными досками.</p>
+            </InfoCard>
+            <InfoCard icon={<BeakerIcon className="w-8 h-8" />} title="Лаборатории и мастерские">
+                <p>Более 30 специализированных лабораторий, включая:</p>
+                <ul className="list-disc list-inside pl-2 text-sm">
+                    <li>Тренажер-имитатор бурения</li>
+                    <li>Лаборатория гидравлики и нефтегазового оборудования</li>
+                    <li>Химико-аналитическая лаборатория</li>
+                    <li>Мастерские по ремонту и обслуживанию техники</li>
+                </ul>
+            </InfoCard>
+            <InfoCard icon={<BuildingLibraryIcon className="w-8 h-8" />} title="Библиотека">
+                <p>Современный библиотечный комплекс с фондом более 100 000 изданий. К услугам студентов читальный зал, компьютеры с доступом к электронным базам данных (eLibrary, IPR Books) и Wi-Fi.</p>
+            </InfoCard>
+            <InfoCard icon={<BoltIcon className="w-8 h-8" />} title="Спортивный комплекс">
+                <p>Большой игровой спортзал, тренажерный зал, открытый стадион с футбольным полем и беговыми дорожками. Работают секции по волейболу, баскетболу, мини-футболу, легкой атлетике.</p>
+            </InfoCard>
+            <InfoCard icon={<HomeModernIcon className="w-8 h-8" />} title="Общежитие">
+                <p>Комфортабельное общежитие на 400 мест для иногородних студентов. Комнаты на 2-3 человека, на каждом этаже оборудованные кухни, душевые и зоны отдыха. Доступный Wi-Fi. Стоимость проживания ~1500 руб/мес.</p>
+            </InfoCard>
+            <InfoCard icon={<UserGroupIcon className="w-8 h-8" />} title="Студенческая жизнь">
+                <p>Просторная столовая с разнообразным меню и демократичными ценами. Работает медпункт и актовый зал на 500 мест, где проходят все праздники и мероприятия. Действует музей истории колледжа.</p>
+            </InfoCard>
+        </div>
+    </Section>
+);
+
+const EducationSection: React.FC = () => (
+    <Section id="education" title="Современный учебный процесс">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы сочетаем проверенные временем методики с передовыми технологиями, чтобы готовить специалистов, готовых к вызовам завтрашнего дня.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<CalendarDaysIcon className="w-8 h-8" />} title="Сбалансированный учебный план">
+                <p>Учебный год разделен на семестры с четким графиком сессий и каникул. Расписание занятий (3-4 пары в день) обеспечивает оптимальный баланс между лекциями, семинарами и практическими занятиями в лабораториях.</p>
+            </InfoCard>
+            <InfoCard icon={<ComputerDesktopIcon className="w-8 h-8" />} title="Инновационные технологии">
+                <p>Активно используем Moodle и другие электронные платформы для доступа к учебным материалам 24/7. Поощряется проектная деятельность, позволяющая студентам решать реальные производственные кейсы.</p>
+            </InfoCard>
+            <InfoCard icon={<SparklesIcon className="w-8 h-8" />} title="Конкурсы профмастерства">
+                <p>Наши студенты — постоянные участники и призеры региональных и национальных чемпионатов WorldSkills Russia и «Абилимпикс», демонстрируя высокий уровень подготовки и мастерства.</p>
+            </InfoCard>
+            <InfoCard icon={<BriefcaseIcon className="w-8 h-8" />} title="Практика на производстве">
+                <p>Производственная практика (до 6 месяцев за весь период обучения) проходит на предприятиях-партнерах. Это оплачиваемая работа, где студенты под руководством наставников погружаются в профессию.</p>
+            </InfoCard>
+            <InfoCard icon={<CubeTransparentIcon className="w-8 h-8" />} title="Тренажеры и симуляторы">
+                <p>Для отработки практических навыков в безопасных условиях используются современные симуляторы бурения, виртуальные тренажеры по эксплуатации оборудования и автоматизированные обучающие комплексы.</p>
+            </InfoCard>
+            <InfoCard icon={<AcademicCapIcon className="w-8 h-8" />} title="Наука и развитие">
+                <p>Студенты ведут научно-исследовательскую работу, выступают на конференциях. Дипломное проектирование нацелено на решение реальных задач. Есть курсы повышения квалификации и доп. образования.</p>
+            </InfoCard>
+        </div>
+    </Section>
+);
+
+const StudentLifeSection: React.FC = () => (
+    <Section id="student-life" title="Яркая студенческая жизнь">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Учеба в ОНК — это не только лекции и практика. Это время открытий, дружбы и самореализации. Мы создали все условия, чтобы каждый студент нашел занятие по душе.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<UserGroupIcon className="w-8 h-8" />} title="Студенческий совет">
+                <p>Активный студенческий совет — это голос каждого студента. Ребята организуют мероприятия, реализуют проекты по улучшению жизни в колледже и представляют интересы учащихся перед администрацией.</p>
+            </InfoCard>
+            <InfoCard icon={<SparklesIcon className="w-8 h-8" />} title="Творческие коллективы">
+                <p>Раскрой свои таланты! У нас действуют команда КВН, вокальная и театральная студии, танцевальные коллективы. Наши студенты — звезды городских и республиканских фестивалей.</p>
+            </InfoCard>
+            <InfoCard icon={<FlagIcon className="w-8 h-8" />} title="Спортивные клубы">
+                <p>Здоровый дух в здоровом теле! Сборные колледжа по волейболу, баскетболу, футболу и легкой атлетике регулярно занимают призовые места на соревнованиях различного уровня.</p>
+            </InfoCard>
+            <InfoCard icon={<CalendarDaysIcon className="w-8 h-8" />} title="Традиции колледжа">
+                <p>Мы чтим наши традиции: торжественное «Посвящение в студенты», празднование Дня нефтяника, интеллектуальные игры, конкурсы «Мисс и Мистер ОНК» и, конечно, незабываемый выпускной бал.</p>
+            </InfoCard>
+            <InfoCard icon={<HeartIcon className="w-8 h-8" />} title="Волонтерское движение">
+                <p>Наши студенты-волонтеры помогают ветеранам, организуют экологические акции, участвуют в социальных проектах и делают мир вокруг себя немного лучше и добрее.</p>
+            </InfoCard>
+            <InfoCard icon={<SpeakerWaveIcon className="w-8 h-8" />} title="Студенческие СМИ">
+                <p>Студенческая газета «Проф.com», активные группы в социальных сетях и развивающийся YouTube-канал позволяют быть в курсе всех событий и делиться самыми яркими моментами жизни колледжа.</p>
+            </InfoCard>
+        </div>
+        <div className="max-w-4xl mx-auto mt-16 space-y-8">
+            <blockquote className="border-l-4 border-cyan-500 pl-6 text-left">
+                <p className="text-gray-300 italic">"Здесь я нашел не только профессию, но и настоящих друзей. Студсовет научил меня быть лидером, а команда КВН – смотреть на жизнь с юмором!"</p>
+                <footer className="mt-2 text-sm text-gray-400">— Артём, 3 курс, специальность 'Разработка месторождений'</footer>
+            </blockquote>
+            <blockquote className="border-l-4 border-cyan-500 pl-6 text-left">
+                <p className="text-gray-300 italic">"Я всегда любила петь, и в колледже смогла развить свой талант в вокальной студии. Выступления на сцене – это незабываемые эмоции! Рада, что учебу можно совмещать с творчеством."</p>
+                <footer className="mt-2 text-sm text-gray-400">— Елена, 2 курс, специальность 'Информационные системы'</footer>
+            </blockquote>
+        </div>
+    </Section>
+);
+
+const TeachersSection: React.FC = () => (
+    <Section id="teachers" title="Наши преподаватели — наша гордость">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Знания передают не стены, а люди. В ОНК работают настоящие профессионалы, которые сочетают глубокие теоретические знания с богатым практическим опытом и искренней любовью к своему делу.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center mb-16">
+            <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-4xl font-bold text-cyan-400">120+</div>
+                <div className="text-gray-400 mt-2">Преподавателей и мастеров</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-4xl font-bold text-cyan-400">85%</div>
+                <div className="text-gray-400 mt-2">Имеют высшую и первую категорию</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-4xl font-bold text-cyan-400">15+</div>
+                <div className="text-gray-400 mt-2">Кандидатов наук и доцентов</div>
+            </div>
+            <div className="bg-gray-800 p-4 rounded-lg">
+                <div className="text-4xl font-bold text-cyan-400">40%</div>
+                <div className="text-gray-400 mt-2">С опытом работы на производстве</div>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<AcademicCapIcon className="w-8 h-8" />} title="Постоянное развитие">
+                <p>Наши педагоги регулярно проходят стажировки на ведущих предприятиях отрасли, повышают квалификацию в лучших вузах страны и участвуют в научно-практических конференциях.</p>
+            </InfoCard>
+            <InfoCard icon={<BookOpenIcon className="w-8 h-8" />} title="Методическая работа">
+                <p>Преподаватели разрабатывают авторские учебные пособия, методические материалы и активно публикуются в научных журналах, обогащая образовательный процесс передовым опытом.</p>
+            </InfoCard>
+            <InfoCard icon={<UsersIcon className="w-8 h-8" />} title="Наставничество и кураторство">
+                <p>За каждой группой закреплен куратор, который помогает студентам в адаптации, решении учебных и личных вопросов. Мы практикуем индивидуальный подход к каждому студенту.</p>
+            </InfoCard>
+        </div>
+        <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mt-20 mb-10">Ключевые фигуры педагогического состава</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {featuredTeachersData.map((teacher, index) => (
+                <TeacherProfileCard key={index} {...teacher} />
+            ))}
+        </div>
+    </Section>
+);
+
+const AdmissionSection: React.FC = () => (
+    <Section id="admission" title="Поступление 2025: Пошаговое руководство">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы сделали процесс поступления максимально прозрачным и понятным. Следуйте этому руководству, чтобы стать частью нашего колледжа.</p>
+
+        <h3 className="text-2xl font-bold text-center text-white mb-8">Календарь абитуриента 2025</h3>
+        <div className="relative max-w-4xl mx-auto mb-16">
+            <div className="absolute left-1/2 w-0.5 h-full bg-gray-700 hidden sm:block"></div>
+            {admissionCalendarData.map((item, index) => (
+                <div key={index} className={`relative flex items-center mb-8 ${index % 2 === 0 ? 'sm:justify-start' : 'sm:justify-end'}`}>
+                    <div className={`w-full sm:w-5/12 p-6 bg-gray-800 rounded-lg shadow-lg ${index % 2 === 0 ? 'sm:pr-12' : 'sm:pl-12 sm:text-right'}`}>
+                        <h4 className="text-xl font-bold text-cyan-400">{item.date}</h4>
+                        <p className="text-white font-semibold mt-1">{item.event}</p>
+                        <p className="text-gray-400 text-sm">{item.description}</p>
+                    </div>
+                    <div className="absolute left-1/2 -ml-3 z-10 w-6 h-6 rounded-full bg-cyan-500 border-4 border-gray-900 hidden sm:block"></div>
+                </div>
+            ))}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
+            <InfoCard icon={<ClipboardDocumentListIcon className="w-8 h-8" />} title="Шаг 1: Подготовьте документы">
+                <ul className="list-disc list-inside space-y-1">
+                    <li>Паспорт (оригинал и копия)</li>
+                    <li>Аттестат (оригинал и копия)</li>
+                    <li>4 фотографии 3х4 см</li>
+                    <li>Медицинская справка (форма 086-у)</li>
+                    <li>СНИЛС</li>
+                    <li>Документы, подтверждающие льготы (при наличии)</li>
+                </ul>
+            </InfoCard>
+            <InfoCard icon={<PaperAirplaneIcon className="w-8 h-8" />} title="Шаг 2: Подайте заявление">
+                <p>Выберите удобный для вас способ:</p>
+                <ul className="list-disc list-inside space-y-1 mt-2">
+                    <li><span className="font-bold text-white">Лично:</span> в приемной комиссии (каб. 101)</li>
+                    <li><span className="font-bold text-white">По почте:</span> заказным письмом на адрес колледжа</li>
+                    <li><span className="font-bold text-white">Онлайн:</span> через портал Госуслуги</li>
+                </ul>
+            </InfoCard>
+            <InfoCard icon={<ChartBarIcon className="w-8 h-8" />} title="Шаг 3: Отслеживайте списки">
+                <p>Конкурс проводится по среднему баллу аттестата. Следите за своим положением в конкурсных списках, которые ежедневно обновляются на официальном сайте колледжа.</p>
+            </InfoCard>
+            <InfoCard icon={<AcademicCapIcon className="w-8 h-8" />} title="Шаг 4: Подтвердите зачисление">
+                <p>Для зачисления на бюджетное место необходимо предоставить оригинал аттестата в приемную комиссию в установленные сроки. Не упустите свой шанс!</p>
+            </InfoCard>
+        </div>
+
+        <div className="max-w-3xl mx-auto">
+            <h3 className="text-2xl font-bold text-center text-white mb-6">Часто задаваемые вопросы</h3>
+            {faqData.map((faq, index) => (
+                <FAQItem key={index} question={faq.question} answer={faq.answer} />
+            ))}
+        </div>
+    </Section>
+);
+
+const CareersSection: React.FC = () => (
+    <Section id="careers" title="Трудоустройство и карьера">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">
+            Диплом ОНК — это не просто документ об образовании, а прямой путь к высокооплачиваемой и востребованной профессии. Мы обеспечиваем всестороннюю поддержку на старте вашей карьеры.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center mb-16">
+            <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
+                <div className="text-5xl font-bold text-cyan-400 mb-2">&gt;90%</div>
+                <div className="text-gray-400">Выпускников трудоустроены в первый год</div>
+            </div>
+            <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
+                <div className="text-5xl font-bold text-cyan-400 mb-2">от 75 000 ₽</div>
+                <div className="text-gray-400">Средняя стартовая зарплата</div>
+            </div>
+            <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
+                <div className="text-5xl font-bold text-cyan-400 mb-2">50+</div>
+                <div className="text-gray-400">Предприятий-партнеров ждут вас</div>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <InfoCard icon={<LifebuoyIcon className="w-8 h-8" />} title="Центр содействия трудоустройству">
+                <p>Наш карьерный центр помогает студентам на всех этапах: от составления грамотного резюме и подготовки к собеседованию до подбора вакансий из эксклюзивной базы от наших партнеров.</p>
+            </InfoCard>
+            <InfoCard icon={<SpeakerWaveIcon className="w-8 h-8" />} title="Ярмарки вакансий и Дни карьеры">
+                <p>Регулярно организуем встречи с представителями ведущих компаний. Это ваш шанс лично пообщаться с HR-специалистами, узнать о стажировках и открытых вакансиях, и зарекомендовать себя.</p>
+            </InfoCard>
+            <InfoCard icon={<BriefcaseIcon className="w-8 h-8" />} title="Целевое обучение">
+                <p>Программы целевого обучения от таких гигантов, как «Роснефть» и «ЛУКОЙЛ», — это гарантия трудоустройства после выпуска, дополнительная стипендия и оплачиваемая практика.</p>
+            </InfoCard>
+            <InfoCard icon={<ArrowTrendingUpIcon className="w-8 h-8" />} title="Перспективы роста">
+                <p>Наши выпускники начинают карьеру с позиций техника или оператора, и за 5-7 лет вырастают до руководителей участков, ведущих инженеров и начальников отделов.</p>
+            </InfoCard>
+        </div>
+    </Section>
+);
+
+const SupportSection: React.FC = () => (
+    <Section id="support" title="Социальная поддержка и стипендии">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">
+            Мы заботимся о наших студентах и создаем все условия для того, чтобы вы могли сосредоточиться на главном — получении качественного образования и развитии своих талантов.
+        </p>
+
+        <h3 className="text-2xl font-bold text-center text-white mb-8">Стипендиальное обеспечение</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            {scholarshipsInfo.map((scholarship, index) => (
+                <div key={index} className="bg-gray-800 p-6 rounded-lg text-center border-b-4 border-cyan-600 flex flex-col">
+                    <h4 className="text-xl font-semibold text-white mb-2">{scholarship.type}</h4>
+                    <div className="text-3xl font-bold text-cyan-400 my-4 flex-grow flex items-center justify-center">{scholarship.amount}</div>
+                    <p className="text-gray-400 text-sm">{scholarship.condition}</p>
+                </div>
+            ))}
+        </div>
+
+        <h3 className="text-2xl font-bold text-center text-white mt-16 mb-8">Меры социальной поддержки</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<ShieldCheckIcon className="w-8 h-8" />} title="Помощь в трудных ситуациях">
+                <p>Студенты, оказавшиеся в сложной жизненной ситуации, могут обратиться за единовременной материальной помощью. Каждое обращение рассматривается индивидуально.</p>
+            </InfoCard>
+            <InfoCard icon={<HomeModernIcon className="w-8 h-8" />} title="Льготное проживание">
+                <p>Иногородним студентам предоставляется место в комфортабельном общежитии по социально низкой цене. Дети-сироты и инвалиды проживают бесплатно.</p>
+            </InfoCard>
+            <InfoCard icon={<HeartIcon className="w-8 h-8" />} title="Забота о здоровье">
+                <p>В колледже работает медпункт, где можно получить первую помощь. Также доступна бесплатная психологическая поддержка для всех студентов, нуждающихся в консультации.</p>
+            </InfoCard>
+        </div>
+
+        <div className="max-w-4xl mx-auto mt-16 bg-gray-800/50 rounded-lg p-8">
+            <div className="flex flex-col md:flex-row items-center">
+                <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-8">
+                    <div className="flex items-center justify-center h-24 w-24 rounded-full bg-cyan-900/50 text-cyan-400">
+                        <DocumentTextIcon className="w-12 h-12" />
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-2xl font-bold text-white mb-4">Как получить поддержку?</h3>
+                    <p className="text-gray-300 mb-2">Для оформления социальной стипендии, материальной помощи или получения льгот необходимо предоставить подтверждающие документы.</p>
+                    <p className="text-gray-400">По всем вопросам обращайтесь к социальному педагогу колледжа.</p>
+                    <p className="font-semibold text-cyan-400 mt-2">Кабинет №205. Мы всегда готовы помочь!</p>
+                </div>
+            </div>
+        </div>
+    </Section>
+);
+
+const FutureSection: React.FC = () => (
+    <Section id="future" title="Взгляд в будущее: планы развития колледжа">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы не стоим на месте. ОНК — это динамично развивающаяся площадка, которая активно внедряет передовые образовательные стандарты и технологии, чтобы наши выпускники всегда были на шаг впереди.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <InfoCard icon={<SparklesIcon className="w-8 h-8" />} title="Профессионалитет 2026">
+                <p>Мы стали участником федерального проекта «Профессионалитет». Это означает создание образовательно-производственного кластера, открытие 5 новых мастерских, оснащенных по мировым стандартам, и обновление 80% образовательных программ.</p>
+            </InfoCard>
+            <InfoCard icon={<CpuChipIcon className="w-8 h-8" />} title="Цифровая трансформация">
+                <p>Внедрение единой цифровой образовательной платформы, запуск VR/AR-тренажеров для отработки сложных технологических операций и расширение использования дистанционных технологий для повышения доступности образования.</p>
+            </InfoCard>
+            <InfoCard icon={<RocketLaunchIcon className="w-8 h-8" />} title="Новые специальности">
+                <p>Планируется открытие новых перспективных направлений подготовки, отвечающих запросам Индустрии 4.0: «Промышленная робототехника», «Эксплуатация беспилотных авиационных систем» и «Аддитивные технологии».</p>
+            </InfoCard>
+            <InfoCard icon={<BuildingOfficeIcon className="w-8 h-8" />} title="Модернизация инфраструктуры">
+                <p>В планах — полная реновация студенческого общежития с созданием современных коворкинг-зон и строительство нового физкультурно-оздоровительного комплекса с бассейном.</p>
+            </InfoCard>
+            <InfoCard icon={<UserGroupIcon className="w-8 h-8" />} title="Укрепление партнерств">
+                <p>Расширение программ целевого обучения, создание совместных с «Роснефтью» и «Газпромом» научно-исследовательских лабораторий на базе колледжа для решения реальных производственных задач.</p>
+            </InfoCard>
+            <InfoCard icon={<WrenchIcon className="w-8 h-8" />} title="Экология и устойчивое развитие">
+                <p>Запуск программ по «зеленой энергетике» и экологической безопасности в нефтегазовой отрасли. Участие студентов в проектах по рекультивации земель и снижению углеродного следа.</p>
+            </InfoCard>
+        </div>
+        <div className="max-w-5xl mx-auto mt-20 bg-gray-800 rounded-xl shadow-2xl p-8 text-center">
+            <h3 className="text-2xl font-bold text-white">Слово директора</h3>
+            <blockquote className="mt-4 max-w-3xl mx-auto">
+                <p className="text-gray-300 italic">"Наша цель — не просто идти в ногу со временем, а опережать его. Мы создаем образовательную среду, где каждый студент может получить не только востребованную профессию, но и навыки будущего: критическое мышление, умение работать в команде и готовность к непрерывному обучению. ОНК — это инвестиция в надежное и успешное будущее."</p>
+            </blockquote>
+            <footer className="mt-4 text-right">
+                <p className="font-semibold text-white">Ахметов Рустам Маратович</p>
+                <p className="text-sm text-cyan-400">Директор ГАПОУ ОНК им. С.И. Кувыкина</p>
+            </footer>
+        </div>
+    </Section>
+);
+
+const PartnersSection: React.FC = () => (
+    <Section id="partners" title="Наши ключевые партнеры">
+        <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы гордимся долгосрочными и продуктивными отношениями с крупнейшими компаниями России, которые предоставляют нашим студентам уникальные возможности для практики и будущего трудоустройства.</p>
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+            {['Роснефть', 'ЛУКОЙЛ', 'Газпром нефть', 'Татнефть', 'Башнефть', 'Сургутнефтегаз'].map(partner => (
+                <div key={partner} className="text-2xl font-semibold text-gray-500 hover:text-white transition-colors duration-300 filter grayscale hover:grayscale-0">
+                    {partner}
+                </div>
+            ))}
+        </div>
+    </Section>
+);
+
+const ContactsSection: React.FC = () => (
+    <Section id="contacts" title="Приемная комиссия">
+        <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-2xl p-8 md:p-12">
+            <p className="text-center text-lg text-gray-300 mb-8">
+                Готовы сделать первый шаг к успешной карьере? Свяжитесь с нами! Наши специалисты ответят на все ваши вопросы о специальностях, условиях поступления и студенческой жизни.
+            </p>
+            <div className="flex flex-col md:flex-row justify-around items-center space-y-8 md:space-y-0">
+                <div className="flex flex-col items-center space-y-2">
+                    <PhoneIcon className="w-10 h-10 text-cyan-400 mb-2" />
+                    <span className="text-xl font-bold">Телефон</span>
+                    <a href="tel:83476754364" className="text-lg text-gray-300 hover:text-cyan-400 transition-colors">8(34767) 5-43-64</a>
+                </div>
+                <div className="flex flex-col items-center space-y-2">
+                    <EnvelopeIcon className="w-10 h-10 text-cyan-400 mb-2" />
+                    <span className="text-xl font-bold">Email</span>
+                    <a href="mailto:priem@onk-rb.ru" className="text-lg text-gray-300 hover:text-cyan-400 transition-colors">priem@onk-rb.ru</a>
+                </div>
+            </div>
+            <div className="text-center mt-8 text-gray-400">
+                <p>Часы работы: Пн-Пт, 9:00 - 17:00. Кабинет 101.</p>
+            </div>
+            <div className="text-center mt-12">
+                <a href="https://onk-rb.ru/" target="_blank" rel="noopener noreferrer" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 inline-block">
+                    Перейти на официальный сайт
+                </a>
+            </div>
+        </div>
+    </Section>
+);
+
+const Footer: React.FC = () => (
+    <footer className="bg-gray-900 border-t border-gray-800 py-8">
+        <div className="container mx-auto px-4 text-center text-gray-500">
+            <p>&copy; {new Date().getFullYear()} Октябрьский нефтяной колледж им. С.И. Кувыкина. Все права защищены.</p>
+            <div className="flex justify-center space-x-6 mt-4">
+                <a href="https://onk-rb.ru/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">Официальный сайт</a>
+                <a href="https://vk.com/onk_rb" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">ВКонтакте</a>
+            </div>
+        </div>
+    </footer>
+);
+
+
+// --- Navigation ---
+const Navbar: React.FC<{ navLinks: { target: string; label: string }[]; onLinkClick: (target: string) => void }> = ({ navLinks, onLinkClick }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 10);
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 10);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -503,616 +1044,94 @@ const App: React.FC = () => {
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsMenuOpen(false);
+                setIsOpen(false);
             }
         };
-        if (isMenuOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isMenuOpen]);
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuRef]);
 
-    const smoothScrollTo = (targetId: string, duration = 600) => {
-        const targetElement = document.querySelector(targetId);
-        if (!targetElement) return;
-
-        const headerOffset = 80; // height of the nav bar (h-20 = 5rem = 80px)
-        const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-        const startPosition = window.pageYOffset;
-        let startTime: number | null = null;
-
-        const easeInOutQuad = (t: number, b: number, c: number, d: number) => {
-            t /= d / 2;
-            if (t < 1) return c / 2 * t * t + b;
-            t--;
-            return -c / 2 * (t * (t - 2) - 1) + b;
-        };
-
-        const animation = (currentTime: number) => {
-            if (startTime === null) startTime = currentTime;
-            const timeElapsed = currentTime - startTime;
-            const run = easeInOutQuad(timeElapsed, startPosition, offsetPosition - startPosition, duration);
-            window.scrollTo(0, run);
-            if (timeElapsed < duration) {
-                requestAnimationFrame(animation);
-            }
-        };
-
-        requestAnimationFrame(animation);
+    const handleLinkClick = (target: string) => {
+        setIsOpen(false);
+        onLinkClick(target);
     };
-
-    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
-        e.preventDefault();
-        setIsMenuOpen(false);
-        smoothScrollTo(targetId);
-    };
-
-    const navLinks = [
-        { href: '#about', label: 'О колледже' },
-        { href: '#why-us', label: 'Почему мы' },
-        { href: '#specialties', label: 'Специальности' },
-        { href: '#infrastructure', label: 'Инфраструктура' },
-        { href: '#education', label: 'Учебный процесс' },
-        { href: '#student-life', label: 'Студ. жизнь' },
-        { href: '#teachers', label: 'Преподаватели' },
-        { href: '#admission', label: 'Поступление' },
-        { href: '#careers', label: 'Карьера' },
-        { href: '#support', label: 'Поддержка' },
-        { href: '#future', label: 'Будущее' },
-        { href: '#partners', label: 'Партнеры' },
-        { href: '#contacts', label: 'Контакты' },
-    ];
-
-    const activeSpecialty = specialtiesData[activeTab];
 
     return (
-        <div className="bg-gray-900 font-sans">
-            {/* --- Navigation --- */}
-            <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`}>
-                <div className="container mx-auto px-4 flex justify-between items-center h-20">
-                    <a href="#home" onClick={(e) => handleNavClick(e, '#home')} className="text-xl font-bold text-white">
-                      <span className="text-cyan-400">ОНК</span> им. С.И. Кувыкина
-                    </a>
-                    <div className="relative" ref={menuRef}>
-                        <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="p-2 rounded-md text-gray-300 hover:text-cyan-400 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
-                            aria-label="Открыть меню"
-                        >
-                            {isMenuOpen ? <XMarkIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
-                        </button>
-
-                        {isMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-64 origin-top-right bg-gray-800/90 backdrop-blur-md rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none">
-                                <div className="py-2 max-h-[70vh] overflow-y-auto">
-                                    {navLinks.map(link => (
+        <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`} ref={menuRef}>
+            <div className="container mx-auto px-4 flex justify-between items-center h-20">
+                <a href="#home" onClick={(e) => { e.preventDefault(); handleLinkClick('home'); }} className="text-xl font-bold text-white">
+                    <span className="text-cyan-400">ОНК</span> им. С.И. Кувыкина
+                </a>
+                <div className="relative">
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="p-2 rounded-md text-gray-300 hover:text-cyan-400 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
+                        aria-label="Открыть меню"
+                    >
+                        <MenuIcon className="w-6 h-6" />
+                    </button>
+                    {isOpen && (
+                        <div className="absolute right-0 mt-2 w-72 bg-gray-800/95 backdrop-blur-lg rounded-lg shadow-2xl z-[60] overflow-hidden">
+                            <ul className="flex flex-col p-2 max-h-[70vh] overflow-y-auto">
+                                {navLinks.map(link => (
+                                    <li key={link.target}>
                                         <a
-                                            key={link.href}
-                                            href={link.href}
-                                            onClick={(e) => handleNavClick(e, link.href)}
-                                            className="block px-4 py-2 text-sm text-gray-300 hover:bg-cyan-900/50 hover:text-cyan-400 transition-colors duration-200"
+                                            href={`#${link.target}`}
+                                            onClick={(e) => { e.preventDefault(); handleLinkClick(link.target); }}
+                                            className="block w-full text-left px-4 py-3 text-lg text-gray-200 hover:bg-cyan-900/50 hover:text-cyan-300 rounded-md transition-colors duration-200"
                                         >
                                             {link.label}
                                         </a>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </nav>
-
-            {/* --- Hero Section --- */}
-            <header id="home" className="relative h-screen flex items-center justify-center text-center text-white overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('https://picsum.photos/1920/1080?image=1074')" }}></div>
-                <div className="absolute inset-0 bg-black opacity-60"></div>
-                <div className="relative z-10 p-4">
-                    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
-                        Октябрьский нефтяной колледж
-                        <span className="block text-cyan-400 text-3xl md:text-5xl mt-2">им. С.И. Кувыкина</span>
-                    </h1>
-                    <p className="text-lg md:text-2xl max-w-3xl mx-auto text-gray-300">
-                        Ваш старт в успешную карьеру в нефтегазовой отрасли!
-                    </p>
-                    <a href="#admission" onClick={(e) => handleNavClick(e, '#admission')} className="mt-8 inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
-                        Подать заявку
-                    </a>
-                </div>
-            </header>
-
-            <main>
-                {/* --- About Section --- */}
-                <Section id="about" title="Добро пожаловать в ОНК!">
-                    <div className="max-w-4xl mx-auto text-center text-lg text-gray-300 space-y-6">
-                        <p>
-                            <span className="font-bold text-white">Полное официальное название:</span> Государственное автономное профессиональное образовательное учреждение Октябрьский нефтяной колледж им. С.И. Кувыкина.
-                        </p>
-                        <p>
-                            Основанный в <span className="font-bold text-cyan-400">1952 году</span>, наш колледж прошел славный путь от небольшого техникума до одного из ведущих учебных заведений России по подготовке специалистов для топливно-энергетического комплекса. Мы гордимся своей историей, которая неразрывно связана с развитием нефтяной промышленности страны.
-                        </p>
-                        <p>
-                            Колледж имеет все необходимые <span className="font-bold text-white">государственные лицензии и аккредитации</span>, что гарантирует высокое качество образования и соответствие федеральным стандартам.
-                        </p>
-                        <div className="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-8 pt-8">
-                            <div className="flex items-center text-left">
-                                <MapPinIcon className="w-12 h-12 text-cyan-400 mr-4 flex-shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-white">Наш адрес</h4>
-                                    <p className="text-gray-400">г. Октябрьский, Республика Башкортостан, ул. Ленина, д. 59</p>
-                                    <p className="text-gray-500 text-sm">Удобное расположение рядом с автовокзалом и основными транспортными артериями города.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </Section>
-
-                {/* --- Why Us Section --- */}
-                <Section id="why-us" title="Почему выбирают нас?">
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <FeatureCard 
-                            icon={<TrophyIcon className="w-8 h-8"/>} 
-                            title="Признание и достижения" 
-                            description="Колледж неоднократно входил в топ «100 лучших ссузов России» и награжден званием «Лидер отрасли» за вклад в подготовку кадров."
-                        />
-                        <FeatureCard 
-                            icon={<AcademicCapIcon className="w-8 h-8"/>} 
-                            title="Сильнейший преподавательский состав" 
-                            description="Наши преподаватели — это эксперты-практики с многолетним опытом работы на ведущих предприятиях отрасли."
-                        />
-                        <FeatureCard 
-                            icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.622.504-1.125 1.125-1.125h3.375c.621 0 1.125.503 1.125 1.125v3.375c0 .621-.504 1.125-1.125-1.125h-3.375a1.125 1.125 0 01-1.125-1.125v-3.375z" /><path strokeLinecap="round" strokeLinejoin="round" d="M3.375 19.125a1.125 1.125 0 01-1.125-1.125V6.375c0-.621.504-1.125 1.125-1.125h9.375c.621 0 1.125.503 1.125 1.125v11.625c0 .621-.504 1.125-1.125 1.125h-9.375z" /></svg>}
-                            title="Современная база" 
-                            description="Лаборатории и мастерские, оснащенные по последнему слову техники, позволяют получать практические навыки на реальном оборудовании."
-                        />
-                        <FeatureCard 
-                            icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A11.953 11.953 0 0012 16.5c-2.998 0-5.74-1.1-7.843-2.918m15.686-5.418c.53.945 1 2.055 1 3.253 0 1.258-.5 2.44-1.34 3.386" /></svg>}
-                            title="Стратегическое партнерство" 
-                            description="Тесное сотрудничество с лидерами нефтегазовой индустрии: от производственной практики до целевого обучения."
-                        />
-                        <FeatureCard 
-                            icon={<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
-                            title="Гарантия трудоустройства" 
-                            description="Более 90% наших выпускников трудоустраиваются по специальности в первый год после окончания колледжа. Мы готовим востребованных специалистов."
-                        />
-                        <FeatureCard 
-                            icon={<UserGroupIcon className="w-8 h-8"/>} 
-                            title="Насыщенная студенческая жизнь" 
-                            description="Спортивные секции, творческие кружки, волонтерское движение и студенческое самоуправление. У нас интересно не только учиться!"
-                        />
-                    </div>
-                </Section>
-                
-                 {/* --- Specialties Section --- */}
-                <Section id="specialties" title="Наши специальности">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Выберите свое будущее в нефтегазовой отрасли и IT. Мы предлагаем востребованные программы, разработанные совместно с лидерами индустрии.</p>
-                    <div className="flex flex-wrap justify-center border-b border-gray-700 mb-8">
-                        {specialtiesData.map((spec, index) => (
-                            <button
-                                key={index}
-                                onClick={() => setActiveTab(index)}
-                                className={`py-3 px-4 text-sm sm:text-base font-medium border-b-2 transition-colors duration-300 relative ${activeTab === index ? 'text-cyan-400 border-cyan-400' : 'text-gray-400 border-transparent hover:text-white hover:border-gray-500'}`}
-                            >
-                                {spec.name}
-                                {spec.isProfile && <span className="absolute top-1 right-1 text-xs text-cyan-400/70">профильная</span>}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-6 sm:p-8">
-                        <h3 className="text-2xl font-bold text-white mb-2">{activeSpecialty.code} {activeSpecialty.name}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                            {/* General Info */}
-                            <div className="bg-gray-800 p-4 rounded-lg">
-                                <p className="font-semibold text-white">Срок обучения:</p>
-                                <p className="text-gray-400">На базе 9 кл: <span className="text-gray-300">{activeSpecialty.duration9}</span></p>
-                                <p className="text-gray-400">На базе 11 кл: <span className="text-gray-300">{activeSpecialty.duration11}</span></p>
-                            </div>
-                             <div className="bg-gray-800 p-4 rounded-lg">
-                                <p className="font-semibold text-white">Места и конкурс:</p>
-                                <p className="text-gray-400">Бюджет: <span className="text-gray-300">{activeSpecialty.budgetPlaces}</span>, Платно: <span className="text-gray-300">{activeSpecialty.paidPlaces}</span></p>
-                                <p className="text-gray-400">Проходной балл (средний): <span className="text-gray-300">{activeSpecialty.passingScore}</span></p>
-                            </div>
-                             <div className="bg-gray-800 p-4 rounded-lg">
-                                <p className="font-semibold text-white">Квалификация:</p>
-                                <p className="text-cyan-400 text-lg">{activeSpecialty.qualification}</p>
-                            </div>
-                            {/* Key Disciplines */}
-                            <div className="bg-gray-800 p-4 rounded-lg md:col-span-2 lg:col-span-1">
-                                <div className="flex items-center mb-2">
-                                  <BookOpenIcon className="w-6 h-6 text-cyan-400 mr-3" />
-                                  <h4 className="font-semibold text-white">Ключевые дисциплины</h4>
-                                </div>
-                                <ul className="list-disc list-inside text-gray-400 space-y-1">
-                                    {activeSpecialty.keyDisciplines.map(d => <li key={d}>{d}</li>)}
-                                </ul>
-                            </div>
-                            {/* Skills */}
-                            <div className="bg-gray-800 p-4 rounded-lg">
-                                <div className="flex items-center mb-2">
-                                  <WrenchScrewdriverIcon className="w-6 h-6 text-cyan-400 mr-3" />
-                                  <h4 className="font-semibold text-white">Практические навыки</h4>
-                                </div>
-                                <ul className="list-disc list-inside text-gray-400 space-y-1">
-                                    {activeSpecialty.skills.map(s => <li key={s}>{s}</li>)}
-                                </ul>
-                            </div>
-                            {/* Internship & Prospects */}
-                            <div className="bg-gray-800 p-4 rounded-lg">
-                                <div className="flex items-center mb-2">
-                                  <BriefcaseIcon className="w-6 h-6 text-cyan-400 mr-3" />
-                                  <h4 className="font-semibold text-white">Практика и карьера</h4>
-                                </div>
-                                <p className="text-gray-400 mb-2"><span className="font-semibold text-gray-300">Места практики:</span> {activeSpecialty.internship}</p>
-                                <p className="text-gray-400"><span className="font-semibold text-gray-300">Перспективы:</span> {activeSpecialty.prospects}</p>
-                                <p className="text-gray-400 mt-2"><span className="font-semibold text-gray-300">Дальнейшее обучение:</span> {activeSpecialty.furtherEducation}</p>
-                            </div>
-                        </div>
-                    </div>
-                </Section>
-
-                 {/* --- Infrastructure Section --- */}
-                <Section id="infrastructure" title="Наша инфраструктура">
-                     <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы создали современную и комфортную среду, где каждый студент может раскрыть свой потенциал. Учитесь, развивайтесь и живите полной студенческой жизнью в ОНК!</p>
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                         <InfoCard icon={<BuildingOfficeIcon className="w-8 h-8"/>} title="Учебные корпуса">
-                            <p>Два просторных учебных корпуса общей площадью более 15 000 м² после капитального ремонта. Светлые аудитории оснащены мультимедийным оборудованием и интерактивными досками.</p>
-                         </InfoCard>
-                         <InfoCard icon={<BeakerIcon className="w-8 h-8"/>} title="Лаборатории и мастерские">
-                             <p>Более 30 специализированных лабораторий, включая:</p>
-                             <ul className="list-disc list-inside pl-2 text-sm">
-                                <li>Тренажер-имитатор бурения</li>
-                                <li>Лаборатория гидравлики и нефтегазового оборудования</li>
-                                <li>Химико-аналитическая лаборатория</li>
-                                <li>Мастерские по ремонту и обслуживанию техники</li>
-                             </ul>
-                         </InfoCard>
-                         <InfoCard icon={<BuildingLibraryIcon className="w-8 h-8"/>} title="Библиотека">
-                            <p>Современный библиотечный комплекс с фондом более 100 000 изданий. К услугам студентов читальный зал, компьютеры с доступом к электронным базам данных (eLibrary, IPR Books) и Wi-Fi.</p>
-                         </InfoCard>
-                         <InfoCard icon={<BoltIcon className="w-8 h-8"/>} title="Спортивный комплекс">
-                            <p>Большой игровой спортзал, тренажерный зал, открытый стадион с футбольным полем и беговыми дорожками. Работают секции по волейболу, баскетболу, мини-футболу, легкой атлетике.</p>
-                         </InfoCard>
-                         <InfoCard icon={<HomeModernIcon className="w-8 h-8"/>} title="Общежитие">
-                            <p>Комфортабельное общежитие на 400 мест для иногородних студентов. Комнаты на 2-3 человека, на каждом этаже оборудованные кухни, душевые и зоны отдыха. Доступный Wi-Fi. Стоимость проживания ~1500 руб/мес.</p>
-                         </InfoCard>
-                         <InfoCard icon={<UserGroupIcon className="w-8 h-8"/>} title="Студенческая жизнь">
-                            <p>Просторная столовая с разнообразным меню и демократичными ценами. Работает медпункт и актовый зал на 500 мест, где проходят все праздники и мероприятия. Действует музей истории колледжа.</p>
-                         </InfoCard>
-                     </div>
-                </Section>
-                
-                {/* --- Educational Process Section --- */}
-                <Section id="education" title="Современный учебный процесс">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы сочетаем проверенные временем методики с передовыми технологиями, чтобы готовить специалистов, готовых к вызовам завтрашнего дня.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <InfoCard icon={<CalendarDaysIcon className="w-8 h-8"/>} title="Сбалансированный учебный план">
-                           <p>Учебный год разделен на семестры с четким графиком сессий и каникул. Расписание занятий (3-4 пары в день) обеспечивает оптимальный баланс между лекциями, семинарами и практическими занятиями в лабораториях.</p>
-                        </InfoCard>
-                        <InfoCard icon={<ComputerDesktopIcon className="w-8 h-8"/>} title="Инновационные технологии">
-                           <p>Активно используем Moodle и другие электронные платформы для доступа к учебным материалам 24/7. Поощряется проектная деятельность, позволяющая студентам решать реальные производственные кейсы.</p>
-                        </InfoCard>
-                        <InfoCard icon={<SparklesIcon className="w-8 h-8"/>} title="Конкурсы профмастерства">
-                           <p>Наши студенты — постоянные участники и призеры региональных и национальных чемпионатов WorldSkills Russia и «Абилимпикс», демонстрируя высокий уровень подготовки и мастерства.</p>
-                        </InfoCard>
-                        <InfoCard icon={<BriefcaseIcon className="w-8 h-8"/>} title="Практика на производстве">
-                           <p>Производственная практика (до 6 месяцев за весь период обучения) проходит на предприятиях-партнерах. Это оплачиваемая работа, где студенты под руководством наставников погружаются в профессию.</p>
-                        </InfoCard>
-                         <InfoCard icon={<CubeTransparentIcon className="w-8 h-8"/>} title="Тренажеры и симуляторы">
-                           <p>Для отработки практических навыков в безопасных условиях используются современные симуляторы бурения, виртуальные тренажеры по эксплуатации оборудования и автоматизированные обучающие комплексы.</p>
-                        </InfoCard>
-                        <InfoCard icon={<AcademicCapIcon className="w-8 h-8"/>} title="Наука и развитие">
-                           <p>Студенты ведут научно-исследовательскую работу, выступают на конференциях. Дипломное проектирование нацелено на решение реальных задач. Есть курсы повышения квалификации и доп. образования.</p>
-                        </InfoCard>
-                    </div>
-                </Section>
-
-                {/* --- Student Life Section --- */}
-                <Section id="student-life" title="Яркая студенческая жизнь">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Учеба в ОНК — это не только лекции и практика. Это время открытий, дружбы и самореализации. Мы создали все условия, чтобы каждый студент нашел занятие по душе.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <InfoCard icon={<UserGroupIcon className="w-8 h-8"/>} title="Студенческий совет">
-                           <p>Активный студенческий совет — это голос каждого студента. Ребята организуют мероприятия, реализуют проекты по улучшению жизни в колледже и представляют интересы учащихся перед администрацией.</p>
-                        </InfoCard>
-                        <InfoCard icon={<SparklesIcon className="w-8 h-8"/>} title="Творческие коллективы">
-                           <p>Раскрой свои таланты! У нас действуют команда КВН, вокальная и театральная студии, танцевальные коллективы. Наши студенты — звезды городских и республиканских фестивалей.</p>
-                        </InfoCard>
-                        <InfoCard icon={<FlagIcon className="w-8 h-8"/>} title="Спортивные клубы">
-                           <p>Здоровый дух в здоровом теле! Сборные колледжа по волейболу, баскетболу, футболу и легкой атлетике регулярно занимают призовые места на соревнованиях различного уровня.</p>
-                        </InfoCard>
-                        <InfoCard icon={<CalendarDaysIcon className="w-8 h-8"/>} title="Традиции колледжа">
-                           <p>Мы чтим наши традиции: торжественное «Посвящение в студенты», празднование Дня нефтяника, интеллектуальные игры, конкурсы «Мисс и Мистер ОНК» и, конечно, незабываемый выпускной бал.</p>
-                        </InfoCard>
-                        <InfoCard icon={<HeartIcon className="w-8 h-8"/>} title="Волонтерское движение">
-                           <p>Наши студенты-волонтеры помогают ветеранам, организуют экологические акции, участвуют в социальных проектах и делают мир вокруг себя немного лучше и добрее.</p>
-                        </InfoCard>
-                        <InfoCard icon={<SpeakerWaveIcon className="w-8 h-8"/>} title="Студенческие СМИ">
-                           <p>Студенческая газета «Проф.com», активные группы в социальных сетях и развивающийся YouTube-канал позволяют быть в курсе всех событий и делиться самыми яркими моментами жизни колледжа.</p>
-                        </InfoCard>
-                    </div>
-                    <div className="max-w-4xl mx-auto mt-16 space-y-8">
-                        <blockquote className="border-l-4 border-cyan-500 pl-6 text-left">
-                            <p className="text-gray-300 italic">"Здесь я нашел не только профессию, но и настоящих друзей. Студсовет научил меня быть лидером, а команда КВН – смотреть на жизнь с юмором!"</p>
-                            <footer className="mt-2 text-sm text-gray-400">— Артём, 3 курс, специальность 'Разработка месторождений'</footer>
-                        </blockquote>
-                        <blockquote className="border-l-4 border-cyan-500 pl-6 text-left">
-                            <p className="text-gray-300 italic">"Я всегда любила петь, и в колледже смогла развить свой талант в вокальной студии. Выступления на сцене – это незабываемые эмоции! Рада, что учебу можно совмещать с творчеством."</p>
-                            <footer className="mt-2 text-sm text-gray-400">— Елена, 2 курс, специальность 'Информационные системы'</footer>
-                        </blockquote>
-                    </div>
-                </Section>
-
-                {/* --- Teachers Section --- */}
-                <Section id="teachers" title="Наши преподаватели — наша гордость">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Знания передают не стены, а люди. В ОНК работают настоящие профессионалы, которые сочетают глубокие теоретические знания с богатым практическим опытом и искренней любовью к своему делу.</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center mb-16">
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                            <div className="text-4xl font-bold text-cyan-400">120+</div>
-                            <div className="text-gray-400 mt-2">Преподавателей и мастеров</div>
-                        </div>
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                            <div className="text-4xl font-bold text-cyan-400">85%</div>
-                            <div className="text-gray-400 mt-2">Имеют высшую и первую категорию</div>
-                        </div>
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                            <div className="text-4xl font-bold text-cyan-400">15+</div>
-                            <div className="text-gray-400 mt-2">Кандидатов наук и доцентов</div>
-                        </div>
-                        <div className="bg-gray-800 p-4 rounded-lg">
-                            <div className="text-4xl font-bold text-cyan-400">40%</div>
-                            <div className="text-gray-400 mt-2">С опытом работы на производстве</div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <InfoCard icon={<AcademicCapIcon className="w-8 h-8"/>} title="Постоянное развитие">
-                           <p>Наши педагоги регулярно проходят стажировки на ведущих предприятиях отрасли, повышают квалификацию в лучших вузах страны и участвуют в научно-практических конференциях.</p>
-                        </InfoCard>
-                        <InfoCard icon={<BookOpenIcon className="w-8 h-8"/>} title="Методическая работа">
-                           <p>Преподаватели разрабатывают авторские учебные пособия, методические материалы и активно публикуются в научных журналах, обогащая образовательный процесс передовым опытом.</p>
-                        </InfoCard>
-                        <InfoCard icon={<UsersIcon className="w-8 h-8"/>} title="Наставничество и кураторство">
-                           <p>За каждой группой закреплен куратор, который помогает студентам в адаптации, решении учебных и личных вопросов. Мы практикуем индивидуальный подход к каждому студенту.</p>
-                        </InfoCard>
-                    </div>
-                     <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mt-20 mb-10">Ключевые фигуры педагогического состава</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {featuredTeachersData.map((teacher, index) => (
-                            <TeacherProfileCard key={index} {...teacher} />
-                        ))}
-                    </div>
-                </Section>
-
-                {/* --- Admission Section --- */}
-                <Section id="admission" title="Поступление 2025: Пошаговое руководство">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы сделали процесс поступления максимально прозрачным и понятным. Следуйте этому руководству, чтобы стать частью нашего колледжа.</p>
-                    
-                    {/* Applicant's Calendar */}
-                    <h3 className="text-2xl font-bold text-center text-white mb-8">Календарь абитуриента 2025</h3>
-                    <div className="relative max-w-4xl mx-auto mb-16">
-                        <div className="absolute left-1/2 w-0.5 h-full bg-gray-700 hidden sm:block"></div>
-                        {admissionCalendarData.map((item, index) => (
-                            <div key={index} className={`relative flex items-center mb-8 ${index % 2 === 0 ? 'sm:justify-start' : 'sm:justify-end'}`}>
-                                <div className={`w-full sm:w-5/12 p-6 bg-gray-800 rounded-lg shadow-lg ${index % 2 === 0 ? 'sm:pr-12' : 'sm:pl-12 sm:text-right'}`}>
-                                    <h4 className="text-xl font-bold text-cyan-400">{item.date}</h4>
-                                    <p className="text-white font-semibold mt-1">{item.event}</p>
-                                    <p className="text-gray-400 text-sm">{item.description}</p>
-                                </div>
-                                <div className="absolute left-1/2 -ml-3 z-10 w-6 h-6 rounded-full bg-cyan-500 border-4 border-gray-900 hidden sm:block"></div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Admission Steps */}
-                     <div className="grid md:grid-cols-2 gap-8 mb-16">
-                        <InfoCard icon={<ClipboardDocumentListIcon className="w-8 h-8" />} title="Шаг 1: Подготовьте документы">
-                            <ul className="list-disc list-inside space-y-1">
-                                <li>Паспорт (оригинал и копия)</li>
-                                <li>Аттестат (оригинал и копия)</li>
-                                <li>4 фотографии 3х4 см</li>
-                                <li>Медицинская справка (форма 086-у)</li>
-                                <li>СНИЛС</li>
-                                <li>Документы, подтверждающие льготы (при наличии)</li>
+                                    </li>
+                                ))}
                             </ul>
-                        </InfoCard>
-                        <InfoCard icon={<PaperAirplaneIcon className="w-8 h-8" />} title="Шаг 2: Подайте заявление">
-                             <p>Выберите удобный для вас способ:</p>
-                             <ul className="list-disc list-inside space-y-1 mt-2">
-                                <li><span className="font-bold text-white">Лично:</span> в приемной комиссии (каб. 101)</li>
-                                <li><span className="font-bold text-white">По почте:</span> заказным письмом на адрес колледжа</li>
-                                <li><span className="font-bold text-white">Онлайн:</span> через портал Госуслуги</li>
-                             </ul>
-                        </InfoCard>
-                         <InfoCard icon={<ChartBarIcon className="w-8 h-8" />} title="Шаг 3: Отслеживайте списки">
-                            <p>Конкурс проводится по среднему баллу аттестата. Следите за своим положением в конкурсных списках, которые ежедневно обновляются на официальном сайте колледжа.</p>
-                         </InfoCard>
-                         <InfoCard icon={<AcademicCapIcon className="w-8 h-8" />} title="Шаг 4: Подтвердите зачисление">
-                            <p>Для зачисления на бюджетное место необходимо предоставить оригинал аттестата в приемную комиссию в установленные сроки. Не упустите свой шанс!</p>
-                         </InfoCard>
-                    </div>
-
-                     {/* FAQ */}
-                    <div className="max-w-3xl mx-auto">
-                        <h3 className="text-2xl font-bold text-center text-white mb-6">Часто задаваемые вопросы</h3>
-                        {faqData.map((faq, index) => (
-                            <FAQItem key={index} question={faq.question} answer={faq.answer} />
-                        ))}
-                    </div>
-                </Section>
-                
-                {/* --- Careers Section --- */}
-                <Section id="careers" title="Трудоустройство и карьера">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">
-                        Диплом ОНК — это не просто документ об образовании, а прямой путь к высокооплачиваемой и востребованной профессии. Мы обеспечиваем всестороннюю поддержку на старте вашей карьеры.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center mb-16">
-                        <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
-                            <div className="text-5xl font-bold text-cyan-400 mb-2">&gt;90%</div>
-                            <div className="text-gray-400">Выпускников трудоустроены в первый год</div>
                         </div>
-                        <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
-                            <div className="text-5xl font-bold text-cyan-400 mb-2">от 75 000 ₽</div>
-                            <div className="text-gray-400">Средняя стартовая зарплата</div>
-                        </div>
-                        <div className="bg-gray-800 p-6 rounded-lg border-t-4 border-cyan-600 shadow-lg">
-                            <div className="text-5xl font-bold text-cyan-400 mb-2">50+</div>
-                            <div className="text-gray-400">Предприятий-партнеров ждут вас</div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <InfoCard icon={<LifebuoyIcon className="w-8 h-8"/>} title="Центр содействия трудоустройству">
-                            <p>Наш карьерный центр помогает студентам на всех этапах: от составления грамотного резюме и подготовки к собеседованию до подбора вакансий из эксклюзивной базы от наших партнеров.</p>
-                        </InfoCard>
-                        <InfoCard icon={<SpeakerWaveIcon className="w-8 h-8"/>} title="Ярмарки вакансий и Дни карьеры">
-                            <p>Регулярно организуем встречи с представителями ведущих компаний. Это ваш шанс лично пообщаться с HR-специалистами, узнать о стажировках и открытых вакансиях, и зарекомендовать себя.</p>
-                        </InfoCard>
-                        <InfoCard icon={<BriefcaseIcon className="w-8 h-8"/>} title="Целевое обучение">
-                            <p>Программы целевого обучения от таких гигантов, как «Роснефть» и «ЛУКОЙЛ», — это гарантия трудоустройства после выпуска, дополнительная стипендия и оплачиваемая практика.</p>
-                        </InfoCard>
-                        <InfoCard icon={<ArrowTrendingUpIcon className="w-8 h-8"/>} title="Перспективы роста">
-                            <p>Наши выпускники начинают карьеру с позиций техника или оператора, и за 5-7 лет вырастают до руководителей участков, ведущих инженеров и начальников отделов.</p>
-                        </InfoCard>
-                    </div>
-                </Section>
-
-                {/* --- Social Support Section --- */}
-                <Section id="support" title="Социальная поддержка и стипендии">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">
-                        Мы заботимся о наших студентах и создаем все условия для того, чтобы вы могли сосредоточиться на главном — получении качественного образования и развитии своих талантов.
-                    </p>
-                    
-                    <h3 className="text-2xl font-bold text-center text-white mb-8">Стипендиальное обеспечение</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-                        {scholarshipsInfo.map((scholarship, index) => (
-                            <div key={index} className="bg-gray-800 p-6 rounded-lg text-center border-b-4 border-cyan-600 flex flex-col">
-                                <h4 className="text-xl font-semibold text-white mb-2">{scholarship.type}</h4>
-                                <div className="text-3xl font-bold text-cyan-400 my-4 flex-grow flex items-center justify-center">{scholarship.amount}</div>
-                                <p className="text-gray-400 text-sm">{scholarship.condition}</p>
-                            </div>
-                        ))}
-                    </div>
-
-                    <h3 className="text-2xl font-bold text-center text-white mt-16 mb-8">Меры социальной поддержки</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <InfoCard icon={<ShieldCheckIcon className="w-8 h-8" />} title="Помощь в трудных ситуациях">
-                            <p>Студенты, оказавшиеся в сложной жизненной ситуации, могут обратиться за единовременной материальной помощью. Каждое обращение рассматривается индивидуально.</p>
-                        </InfoCard>
-                        <InfoCard icon={<HomeModernIcon className="w-8 h-8" />} title="Льготное проживание">
-                            <p>Иногородним студентам предоставляется место в комфортабельном общежитии по социально низкой цене. Дети-сироты и инвалиды проживают бесплатно.</p>
-                        </InfoCard>
-                        <InfoCard icon={<HeartIcon className="w-8 h-8" />} title="Забота о здоровье">
-                            <p>В колледже работает медпункт, где можно получить первую помощь. Также доступна бесплатная психологическая поддержка для всех студентов, нуждающихся в консультации.</p>
-                        </InfoCard>
-                    </div>
-                    
-                    <div className="max-w-4xl mx-auto mt-16 bg-gray-800/50 rounded-lg p-8">
-                         <div className="flex flex-col md:flex-row items-center">
-                            <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-8">
-                               <div className="flex items-center justify-center h-24 w-24 rounded-full bg-cyan-900/50 text-cyan-400">
-                                   <DocumentTextIcon className="w-12 h-12" />
-                               </div>
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-white mb-4">Как получить поддержку?</h3>
-                                <p className="text-gray-300 mb-2">Для оформления социальной стипендии, материальной помощи или получения льгот необходимо предоставить подтверждающие документы.</p>
-                                <p className="text-gray-400">По всем вопросам обращайтесь к социальному педагогу колледжа.</p>
-                                <p className="font-semibold text-cyan-400 mt-2">Кабинет №205. Мы всегда готовы помочь!</p>
-                            </div>
-                         </div>
-                    </div>
-                </Section>
-                
-                {/* --- Future Section --- */}
-                <Section id="future" title="Взгляд в будущее: планы развития колледжа">
-                     <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы не стоим на месте. ОНК — это динамично развивающаяся площадка, которая активно внедряет передовые образовательные стандарты и технологии, чтобы наши выпускники всегда были на шаг впереди.</p>
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                         <InfoCard icon={<SparklesIcon className="w-8 h-8"/>} title="Профессионалитет 2026">
-                             <p>Мы стали участником федерального проекта «Профессионалитет». Это означает создание образовательно-производственного кластера, открытие 5 новых мастерских, оснащенных по мировым стандартам, и обновление 80% образовательных программ.</p>
-                         </InfoCard>
-                         <InfoCard icon={<CpuChipIcon className="w-8 h-8"/>} title="Цифровая трансформация">
-                             <p>Внедрение единой цифровой образовательной платформы, запуск VR/AR-тренажеров для отработки сложных технологических операций и расширение использования дистанционных технологий для повышения доступности образования.</p>
-                         </InfoCard>
-                         <InfoCard icon={<RocketLaunchIcon className="w-8 h-8"/>} title="Новые специальности">
-                             <p>Планируется открытие новых перспективных направлений подготовки, отвечающих запросам Индустрии 4.0: «Промышленная робототехника», «Эксплуатация беспилотных авиационных систем» и «Аддитивные технологии».</p>
-                         </InfoCard>
-                          <InfoCard icon={<BuildingOfficeIcon className="w-8 h-8"/>} title="Модернизация инфраструктуры">
-                             <p>В планах — полная реновация студенческого общежития с созданием современных коворкинг-зон и строительство нового физкультурно-оздоровительного комплекса с бассейном.</p>
-                         </InfoCard>
-                         <InfoCard icon={<UserGroupIcon className="w-8 h-8"/>} title="Укрепление партнерств">
-                            <p>Расширение программ целевого обучения, создание совместных с «Роснефтью» и «Газпромом» научно-исследовательских лабораторий на базе колледжа для решения реальных производственных задач.</p>
-                         </InfoCard>
-                         <InfoCard icon={<WrenchIcon className="w-8 h-8"/>} title="Экология и устойчивое развитие">
-                            <p>Запуск программ по «зеленой энергетике» и экологической безопасности в нефтегазовой отрасли. Участие студентов в проектах по рекультивации земель и снижению углеродного следа.</p>
-                         </InfoCard>
-                     </div>
-                     <div className="max-w-5xl mx-auto mt-20 bg-gray-800 rounded-xl shadow-2xl p-8 flex flex-col md:flex-row items-center">
-                        <img src="https://picsum.photos/250/250?image=1005" alt="Директор колледжа" className="w-40 h-40 rounded-full border-4 border-cyan-500 mb-6 md:mb-0 md:mr-8 flex-shrink-0"/>
-                        <div className="text-center md:text-left">
-                           <h3 className="text-2xl font-bold text-white">Слово директора</h3>
-                           <blockquote className="mt-4">
-                               <p className="text-gray-300 italic">"Наша цель — не просто идти в ногу со временем, а опережать его. Мы создаем образовательную среду, где каждый студент может получить не только востребованную профессию, но и навыки будущего: критическое мышление, умение работать в команде и готовность к непрерывному обучению. ОНК — это инвестиция в надежное и успешное будущее."</p>
-                           </blockquote>
-                           <footer className="mt-4 text-right">
-                               <p className="font-semibold text-white">Ахметов Рустам Маратович</p>
-                               <p className="text-sm text-cyan-400">Директор ГАПОУ ОНК им. С.И. Кувыкина</p>
-                           </footer>
-                        </div>
-                     </div>
-                </Section>
-
-                {/* --- Partners Section --- */}
-                <Section id="partners" title="Наши ключевые партнеры">
-                    <p className="max-w-3xl mx-auto text-center text-lg text-gray-400 mb-12">Мы гордимся долгосрочными и продуктивными отношениями с крупнейшими компаниями России, которые предоставляют нашим студентам уникальные возможности для практики и будущего трудоустройства.</p>
-                    <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-                        {['Роснефть', 'ЛУКОЙЛ', 'Газпром нефть', 'Татнефть', 'Башнефть', 'Сургутнефтегаз'].map(partner => (
-                            <div key={partner} className="text-2xl font-semibold text-gray-500 hover:text-white transition-colors duration-300 filter grayscale hover:grayscale-0">
-                                {partner}
-                            </div>
-                        ))}
-                    </div>
-                </Section>
-
-                {/* --- Contact Section --- */}
-                <Section id="contacts" title="Приемная комиссия">
-                    <div className="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-2xl p-8 md:p-12">
-                        <p className="text-center text-lg text-gray-300 mb-8">
-                            Готовы сделать первый шаг к успешной карьере? Свяжитесь с нами! Наши специалисты ответят на все ваши вопросы о специальностях, условиях поступления и студенческой жизни.
-                        </p>
-                        <div className="flex flex-col md:flex-row justify-around items-center space-y-8 md:space-y-0">
-                            <div className="flex flex-col items-center space-y-2">
-                                <PhoneIcon className="w-10 h-10 text-cyan-400 mb-2"/>
-                                <span className="text-xl font-bold">Телефон</span>
-                                <a href="tel:+77777777777" className="text-lg text-gray-300 hover:text-cyan-400 transition-colors">+7 777 777 777</a>
-                            </div>
-                             <div className="flex flex-col items-center space-y-2">
-                                <EnvelopeIcon className="w-10 h-10 text-cyan-400 mb-2"/>
-                                <span className="text-xl font-bold">Email</span>
-                                <a href="mailto:priem@onk-rb.ru" className="text-lg text-gray-300 hover:text-cyan-400 transition-colors">priem@onk-rb.ru</a>
-                            </div>
-                        </div>
-                         <div className="text-center mt-8 text-gray-400">
-                             <p>Часы работы: Пн-Пт, 9:00 - 17:00. Кабинет 101.</p>
-                         </div>
-                        <div className="text-center mt-12">
-                           <a href="https://onk-rb.ru/" target="_blank" rel="noopener noreferrer" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 inline-block">
-                                Перейти на официальный сайт
-                            </a>
-                        </div>
-                    </div>
-                </Section>
-            </main>
-            
-            {/* --- Footer --- */}
-            <footer className="bg-gray-900 border-t border-gray-800 py-8">
-                <div className="container mx-auto px-4 text-center text-gray-500">
-                    <p>&copy; {new Date().getFullYear()} Октябрьский нефтяной колледж им. С.И. Кувыкина. Все права защищены.</p>
-                     <div className="flex justify-center space-x-6 mt-4">
-                        <a href="https://onk-rb.ru/" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">Официальный сайт</a>
-                        <a href="https://vk.com/onk_rb" target="_blank" rel="noopener noreferrer" className="hover:text-cyan-400 transition-colors">ВКонтакте</a>
-                    </div>
+                    )}
                 </div>
-            </footer>
+            </div>
+        </nav>
+    );
+};
+
+
+// --- App ---
+const App: React.FC = () => {
+    const navLinks = [
+        { target: 'about', label: 'О колледже' },
+        { target: 'why-us', label: 'Почему мы' },
+        { target: 'specialties', label: 'Специальности' },
+        { target: 'infrastructure', label: 'Инфраструктура' },
+        { target: 'education', label: 'Учебный процесс' },
+        { target: 'student-life', label: 'Студ. жизнь' },
+        { target: 'teachers', label: 'Преподаватели' },
+        { target: 'admission', label: 'Поступление' },
+        { target: 'careers', label: 'Карьера' },
+        { target: 'support', label: 'Поддержка' },
+        { target: 'future', label: 'Будущее' },
+        { target: 'partners', label: 'Партнеры' },
+        { target: 'contacts', label: 'Контакты' },
+    ];
+    
+    return (
+        <div className="bg-gray-900 font-sans">
+            <Navbar navLinks={navLinks} onLinkClick={smoothScrollTo} />
+            <Header />
+            <main>
+                <AboutSection />
+                <WhyUsSection />
+                <SpecialtiesSection />
+                <InfrastructureSection />
+                <EducationSection />
+                <StudentLifeSection />
+                <TeachersSection />
+                <AdmissionSection />
+                <CareersSection />
+                <SupportSection />
+                <FutureSection />
+                <PartnersSection />
+                <ContactsSection />
+            </main>
+            <Footer />
         </div>
     );
 };
