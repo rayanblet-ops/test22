@@ -370,42 +370,6 @@ const scholarshipsInfo = [
   }
 ];
 
-// --- Smooth Scroll Helper ---
-const smoothScrollTo = (id: string, duration = 600) => {
-    const target = document.getElementById(id);
-    if (!target) {
-        // If target not found, scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-    }
-    
-    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset;
-    const headerOffset = 80; // Height of the fixed header
-    const offsetPosition = targetPosition - headerOffset;
-
-    const startPosition = window.pageYOffset;
-    const distance = offsetPosition - startPosition;
-    let startTime: number | null = null;
-
-    const ease = (t: number, b: number, c: number, d: number) => {
-        t /= d / 2;
-        if (t < 1) return c / 2 * t * t + b;
-        t--;
-        return -c / 2 * (t * (t - 2) - 1) + b;
-    };
-
-    const animation = (currentTime: number) => {
-        if (startTime === null) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
-        const run = ease(timeElapsed, startPosition, distance, duration);
-        window.scrollTo(0, run);
-        if (timeElapsed < duration) requestAnimationFrame(animation);
-    };
-
-    requestAnimationFrame(animation);
-};
-
-
 // --- Reusable Components ---
 
 interface SectionProps {
@@ -430,7 +394,7 @@ interface FeatureCardProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div className="bg-gray-800 p-6 rounded-lg shadow-lg transform hover:-translate-y-2 transition-transform duration-300">
+  <div className="bg-gray-800 p-6 rounded-lg shadow-lg transform hover:-translate-y-2 transition-transform duration-300 h-full">
     <div className="flex items-center justify-center h-16 w-16 rounded-full bg-cyan-900/50 text-cyan-400 mb-4">
       {icon}
     </div>
@@ -514,7 +478,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer }) => {
 // --- Section Components ---
 
 const Header: React.FC = () => (
-    <header id="home" className="relative h-screen flex items-center justify-center text-center text-white overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-cyan-900">
+    <header className="relative h-screen flex items-center justify-center text-center text-white overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-cyan-900">
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="relative z-10 p-4">
             <h1 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
@@ -524,7 +488,7 @@ const Header: React.FC = () => (
             <p className="text-lg md:text-2xl max-w-3xl mx-auto text-gray-300">
                 Ваш старт в успешную карьеру в нефтегазовой отрасли!
             </p>
-            <a href="#admission" onClick={(e) => { e.preventDefault(); smoothScrollTo('admission'); }} className="mt-8 inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
+            <a href="#admission" className="mt-8 inline-block bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-300 transform hover:scale-105">
                 Подать заявку
             </a>
         </div>
@@ -1030,66 +994,94 @@ const Footer: React.FC = () => (
 
 
 // --- Navigation ---
-const Navbar: React.FC<{ navLinks: { target: string; label: string }[]; onLinkClick: (target: string) => void }> = ({ navLinks, onLinkClick }) => {
+const Navbar: React.FC<{ navLinks: { path: string; label: string }[] }> = ({ navLinks }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 10);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [menuRef]);
-
-    const handleLinkClick = (target: string) => {
+    
+    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+        e.preventDefault();
         setIsOpen(false);
-        onLinkClick(target);
+        
+        if (targetId === '#') {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+             return;
+        }
+
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+            const headerOffset = 80; // h-20 = 5rem = 80px
+            const elementPosition = targetElement.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
     };
 
+
     return (
-        <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`} ref={menuRef}>
-            <div className="container mx-auto px-4 flex justify-between items-center h-20">
-                <a href="#home" onClick={(e) => { e.preventDefault(); handleLinkClick('home'); }} className="text-xl font-bold text-white">
-                    <span className="text-cyan-400">ОНК</span> им. С.И. Кувыкина
-                </a>
-                <div className="relative">
+        <>
+            <nav className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-gray-900/80 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`}>
+                <div className="container mx-auto px-4 flex justify-between items-center h-20">
+                    <a href="#" onClick={(e) => handleNavClick(e, '#')} className="text-xl font-bold text-white">
+                        <span className="text-cyan-400">ОНК</span> им. С.И. Кувыкина
+                    </a>
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={() => setIsOpen(true)}
                         className="p-2 rounded-md text-gray-300 hover:text-cyan-400 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-cyan-500"
                         aria-label="Открыть меню"
                     >
                         <MenuIcon className="w-6 h-6" />
                     </button>
-                    {isOpen && (
-                        <div className="absolute right-0 mt-2 w-72 bg-gray-800/95 backdrop-blur-lg rounded-lg shadow-2xl z-[60] overflow-hidden">
-                            <ul className="flex flex-col p-2 max-h-[70vh] overflow-y-auto">
-                                {navLinks.map(link => (
-                                    <li key={link.target}>
-                                        <a
-                                            href={`#${link.target}`}
-                                            onClick={(e) => { e.preventDefault(); handleLinkClick(link.target); }}
-                                            className="block w-full text-left px-4 py-3 text-lg text-gray-200 hover:bg-cyan-900/50 hover:text-cyan-300 rounded-md transition-colors duration-200"
-                                        >
-                                            {link.label}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                 </div>
+            </nav>
+
+            {/* Overlay */}
+            <div
+                className={`fixed inset-0 bg-black/60 z-[55] transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                onClick={() => setIsOpen(false)}
+                aria-hidden="true"
+            />
+
+            {/* Side Menu */}
+            <div
+                className={`fixed top-0 right-0 h-full w-full max-w-sm bg-gray-800 shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+                role="dialog"
+                aria-modal="true"
+            >
+                <div className="flex justify-between items-center p-4 border-b border-gray-700 h-20">
+                    <h3 className="text-white font-bold text-lg">Меню</h3>
+                    <button
+                        onClick={() => setIsOpen(false)}
+                        className="p-2 rounded-md text-gray-300 hover:text-cyan-400 hover:bg-gray-700"
+                        aria-label="Закрыть меню"
+                    >
+                        <XMarkIcon className="w-6 h-6" />
+                    </button>
+                </div>
+                <ul className="flex flex-col p-2 max-h-[calc(100vh-80px)] overflow-y-auto">
+                    {navLinks.map(link => (
+                        <li key={link.path}>
+                            <a
+                                href={link.path}
+                                onClick={(e) => handleNavClick(e, link.path)}
+                                className="block w-full text-left px-4 py-3 text-lg text-gray-200 hover:bg-cyan-900/50 hover:text-cyan-300 rounded-md transition-colors duration-200"
+                            >
+                                {link.label}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
             </div>
-        </nav>
+        </>
     );
 };
 
@@ -1097,24 +1089,24 @@ const Navbar: React.FC<{ navLinks: { target: string; label: string }[]; onLinkCl
 // --- App ---
 const App: React.FC = () => {
     const navLinks = [
-        { target: 'about', label: 'О колледже' },
-        { target: 'why-us', label: 'Почему мы' },
-        { target: 'specialties', label: 'Специальности' },
-        { target: 'infrastructure', label: 'Инфраструктура' },
-        { target: 'education', label: 'Учебный процесс' },
-        { target: 'student-life', label: 'Студ. жизнь' },
-        { target: 'teachers', label: 'Преподаватели' },
-        { target: 'admission', label: 'Поступление' },
-        { target: 'careers', label: 'Карьера' },
-        { target: 'support', label: 'Поддержка' },
-        { target: 'future', label: 'Будущее' },
-        { target: 'partners', label: 'Партнеры' },
-        { target: 'contacts', label: 'Контакты' },
+        { path: '#about', label: 'О колледже' },
+        { path: '#why-us', label: 'Почему мы' },
+        { path: '#specialties', label: 'Специальности' },
+        { path: '#infrastructure', label: 'Инфраструктура' },
+        { path: '#education', label: 'Учебный процесс' },
+        { path: '#student-life', label: 'Студ. жизнь' },
+        { path: '#teachers', label: 'Преподаватели' },
+        { path: '#admission', label: 'Поступление' },
+        { path: '#careers', label: 'Карьера' },
+        { path: '#support', label: 'Поддержка' },
+        { path: '#future', label: 'Будущее' },
+        { path: '#partners', label: 'Партнеры' },
+        { path: '#contacts', label: 'Контакты' },
     ];
     
     return (
         <div className="bg-gray-900 font-sans">
-            <Navbar navLinks={navLinks} onLinkClick={smoothScrollTo} />
+            <Navbar navLinks={navLinks} />
             <Header />
             <main>
                 <AboutSection />
